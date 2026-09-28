@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Lending Requests{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>Lending Requests</h1>
+      <p class="muted">Review and respond to borrowers asking for your items.</p>
+    </div>
+    <a class="btn btn-outline" href="{{ url_for('lender.rentals') }}">Current rentals</a>
+  </div>
+
+  {% for key, title in [('pending','Pending'),('approved','Approved'),('rejected','Rejected'),('cancelled','Cancelled')] %}
+    <section class="section-block">
+      <div class="card-head"><h2>{{ title }} ({{ groups[key] | length }})</h2></div>
+      {% if groups[key] %}
+        <div class="rental-grid">
+          {% for r, t in rows[key] %}
+            <article class="rental-card card">
+              <header class="rental-card-head">
+                <div class="rental-card-title">
+                  <a href="{{ url_for('rentals.detail', request_id=r.id) }}"><strong>{{ r.item.name }}</strong></a>
+                  <span class="badge {{ 'badge-green' if r.status in ('approved','active') else 'badge-orange' if r.status == 'pending' else 'badge-red' if r.status in ('rejected','cancelled') else 'badge-gray' }}">
+                    {{ RENTAL_STATUS_LABELS[r.status] }}
+                  </span>
+                  {% if unread_map.get(r.id) %}
+                    <span class="badge badge-count-inline">{{ unread_map[r.id] }} new message{{ 's' if unread_map[r.id] != 1 }}</span>
+                  {% endif %}
+                </div>
+                <div class="rental-card-who muted">From: {{ r.borrower.name }}</div>
+              </header>
+
+              <div class="rental-card-meta">
+                <span><b>Dates</b> {{ r.start_date.strftime('%d %b %Y') }} – {{ r.end_date.strftime('%d %b %Y') }}</span>
+                <span><b>Days</b> {{ r.number_of_days }}</span>
+                <span><b>Rate</b> {{ thb(r.item.price_per_day) }}/day</span>
+                {% if t %}
+                  <span><b>Subtotal</b> {{ thb(t.rental_subtotal) }}</span>
+                  <span><b>You receive</b> {{ thb(t.lender_payout) }}</span>
+                {% endif %}
+              </div>
+
+              <footer class="rental-card-actions">
+                {% if r.status == 'pending' %}
+                  <form method="post" action="{{ url_for('rentals.approve', request_id=r.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-primary" type="submit">Approve</button>
+                  </form>
+                  <form method="post" action="{{ url_for('rentals.reject', request_id=r.id) }}"
+                        data-confirm="Reject this request? The chat will be permanently deleted.">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline" type="submit">Reject</button>
+                  </form>
+                {% endif %}
+                <a class="btn btn-sm btn-outline" href="{{ url_for('rentals.detail', request_id=r.id) }}">View Request</a>
+                {% if r.can_chat %}
+                  <a class="btn btn-sm btn-primary" href="{{ url_for('chat.index', request_id=r.id) }}">Chat</a>
+                {% endif %}
+              </footer>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card empty-state"><p class="muted">No {{ title | lower }} requests.</p></div>
+      {% endif %}
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

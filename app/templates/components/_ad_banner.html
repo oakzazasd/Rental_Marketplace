@@ -1,0 +1,21 @@
+{% macro ad_banner(image=None, url=None, alt='', active=True, start_date=None, end_date=None,
+                   title='Banner Ad Placeholder', subtitle='Your ad could be here — 728 × 90') %}
+{# Reusable banner advertisement placeholder.
+   Future versions can pass image / url / alt / active / start_date / end_date. #}
+{% if active %}
+  <div class="ad-banner" role="complementary" aria-label="Advertisement"
+       data-start="{{ start_date or '' }}" data-end="{{ end_date or '' }}">
+    <span class="ad-tag">ADVERTISEMENT</span>
+    {% if image %}
+      {% if url %}<a href="{{ url }}">{% endif %}
+      <img src="{{ image }}" alt="{{ alt or title }}">
+      {% if url %}</a>{% endif %}
+    {% else %}
+      <div class="ad-placeholder">
+        <span class="ad-title">{{ title }}</span>
+        <span class="ad-sub">{{ subtitle }}</span>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+{% endmacro %}

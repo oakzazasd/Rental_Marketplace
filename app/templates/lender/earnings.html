@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "components/_price_breakdown.html" import rental_costs %}
+
+{% block title %}Earnings{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>Earnings</h1>
+      <p class="muted">Gross revenue, platform fees and your net payout — all in Thai Baht.</p>
+    </div>
+    <a class="btn btn-outline" href="{{ url_for('advertising.index') }}">Advertising</a>
+  </div>
+
+  <div class="two-col">
+    <section class="card earnings-card">
+      <div class="card-head"><h2>Completed rentals</h2></div>
+      <div class="earnings-rows">
+        <div class="earnings-row"><span>Gross rental revenue</span><strong>{{ thb(totals.gross) }}</strong></div>
+        <div class="earnings-row is-fee"><span>Platform fees</span><strong>-{{ thb(totals.fees) }}</strong></div>
+        <div class="earnings-row is-total"><span>Net earnings</span><strong>{{ thb(totals.net) }}</strong></div>
+      </div>
+    </section>
+
+    <section class="card earnings-card">
+      <div class="card-head"><h2>In progress</h2></div>
+      <div class="earnings-rows">
+        <div class="earnings-row"><span>Active &amp; approved revenue</span><strong>{{ thb(totals.active_gross) }}</strong></div>
+        <div class="earnings-row is-fee"><span>Platform fees</span><strong>-{{ thb(totals.active_fees) }}</strong></div>
+        <div class="earnings-row is-total"><span>Expected payout</span><strong>{{ thb(totals.active_net) }}</strong></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-head"><h2>Pending (awaiting approval)</h2></div>
+    {% if pending %}
+      <table class="table">
+        <thead>
+          <tr><th>Item</th><th>Borrower</th><th>Dates</th><th>Subtotal</th><th>Your payout</th></tr>
+        </thead>
+        <tbody>
+          {% for t in pending %}
+            {% set r = t.rental_request %}
+            <tr>
+              <td><a href="{{ url_for('rentals.detail', request_id=r.id) }}">{{ r.item.name }}</a></td>
+              <td>{{ r.borrower.name }}</td>
+              <td>{{ r.start_date.strftime('%d %b') }} – {{ r.end_date.strftime('%d %b %Y') }}</td>
+              <td>{{ thb(t.rental_subtotal) }}</td>
+              <td>{{ thb(t.lender_payout) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="earnings-rows inset">
+        <div class="earnings-row"><span>Pending gross</span><strong>{{ thb(totals.pending_gross) }}</strong></div>
+        <div class="earnings-row is-fee"><span>Pending fees</span><strong>-{{ thb(totals.pending_fees) }}</strong></div>
+        <div class="earnings-row is-total"><span>Pending payout</span><strong>{{ thb(totals.pending_net) }}</strong></div>
+      </div>
+    {% else %}
+      <p class="muted empty-line">No pending rentals.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Transaction history</h2></div>
+    {% if completed %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Item</th><th>Borrower</th><th>Days</th><th>Subtotal</th>
+              <th>Platform fee</th><th>Earnings</th><th>Deposit</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in completed %}
+              {% set r = t.rental_request %}
+              <tr>
+                <td><a href="{{ url_for('rentals.detail', request_id=r.id) }}">{{ r.item.name }}</a></td>
+                <td>{{ r.borrower.name }}</td>
+                <td>{{ r.number_of_days }}</td>
+                <td>{{ thb(t.rental_subtotal) }}</td>
+                <td>-{{ thb(t.lender_platform_fee) }}</td>
+                <td><strong>{{ thb(t.lender_payout) }}</strong></td>
+                <td>{{ thb(t.deposit) }}</td>
+                <td><span class="badge badge-gray">{{ TRANSACTION_STATUS_LABELS[t.status] }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted empty-line">No completed transactions yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

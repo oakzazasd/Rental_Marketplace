@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "components/_ad_banner.html" import ad_banner %}
+{% from "components/_rental_summary.html" import rental_summary %}
+
+{% block title %}Borrower Dashboard{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>My borrowing</h1>
+      <p class="muted">Everything you have requested, rented and returned.</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('marketplace.items') }}">Find something to rent</a>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><span class="stat-label">Active rentals</span><span class="stat-value">{{ counts.active }}</span></div>
+    <div class="stat-card"><span class="stat-label">Pending requests</span><span class="stat-value">{{ counts.pending }}</span></div>
+    <div class="stat-card"><span class="stat-label">Approved</span><span class="stat-value">{{ counts.approved }}</span></div>
+    <div class="stat-card"><span class="stat-label">Upcoming returns</span><span class="stat-value">{{ counts.upcoming }}</span></div>
+    <div class="stat-card"><span class="stat-label">Completed</span><span class="stat-value">{{ counts.completed }}</span></div>
+    <div class="stat-card"><span class="stat-label">Cancelled / rejected</span>
+      <span class="stat-value">{{ counts.cancelled + counts.rejected }}</span></div>
+    <div class="stat-card accent"><span class="stat-label">Total amount spent</span>
+      <span class="stat-value">{{ thb(total_spent) }}</span></div>
+    <a class="stat-card" href="{{ url_for('borrower.requests_list') }}">
+      <span class="stat-label">Unread rental messages</span>
+      <span class="stat-value">{{ unread_map.values() | sum }}</span>
+    </a>
+  </div>
+
+  {{ ad_banner(title='Banner Ad Placeholder', subtitle='Between dashboard sections') }}
+
+  <section class="section-block">
+    <div class="card-head">
+      <h2>Active &amp; upcoming rentals</h2>
+      <a href="{{ url_for('borrower.rentals') }}">View all</a>
+    </div>
+    {% if active_rows %}
+      <div class="rental-grid">
+        {% for r, t in active_rows %}
+          {{ rental_summary(r, t, 'borrower', unread_map.get(r.id, 0)) }}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card empty-state">
+        <p class="muted">No active rentals.</p>
+        <a class="btn btn-outline" href="{{ url_for('marketplace.items') }}">Browse marketplace</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="section-block">
+    <div class="card-head">
+      <h2>Pending requests</h2>
+      <a href="{{ url_for('borrower.requests_list') }}">View all</a>
+    </div>
+    {% if pending_rows %}
+      <div class="rental-grid">
+        {% for r, t in pending_rows %}
+          {{ rental_summary(r, t, 'borrower', unread_map.get(r.id, 0)) }}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card empty-state"><p class="muted">No pending requests.</p></div>
+    {% endif %}
+  </section>
+
+  <section class="section-block">
+    <div class="card-head">
+      <h2>Upcoming returns</h2>
+    </div>
+    {% if upcoming_returns %}
+      <ul class="compact-list card">
+        {% for r in upcoming_returns %}
+          <li>
+            <div class="compact-main">
+              <a href="{{ url_for('rentals.detail', request_id=r.id) }}"><strong>{{ r.item.name }}</strong></a>
+              <span class="muted">return by {{ r.end_date.strftime('%d %b %Y') }}</span>
+            </div>
+            <span class="badge badge-green">{{ RENTAL_STATUS_LABELS[r.status] }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="card empty-state"><p class="muted">Nothing due back soon.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

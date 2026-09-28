@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="container page-main-inner narrow">
+  <div class="page-head">
+    <div>
+      <h1>Profile</h1>
+      <p class="muted">Your account information and activity.</p>
+    </div>
+    <a class="btn btn-outline" href="{{ url_for('dashboard.index') }}">Dashboard</a>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <span class="stat-label">Items listed</span>
+      <span class="stat-value">{{ listed_items }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Rentals as borrower</span>
+      <span class="stat-value">{{ rentals_as_borrower }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Rentals as lender</span>
+      <span class="stat-value">{{ rentals_as_lender }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Member since</span>
+      <span class="stat-value small">{{ current_user.created_at.strftime('%d %b %Y') }}</span>
+    </div>
+  </div>
+
+  <form class="card form-card" method="post" action="{{ url_for('profile.index') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label class="form-label" for="name">Full name</label>
+      <input class="form-control" id="name" name="name" maxlength="120" required
+             value="{{ current_user.name }}">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="student_id">Student ID</label>
+      <input class="form-control" id="student_id" name="student_id" maxlength="20" required
+             value="{{ current_user.student_id }}">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="email">KMITL email</label>
+      <input class="form-control" id="email" value="{{ current_user.email }}" readonly
+             aria-describedby="emailHelp">
+      <div class="form-hint" id="emailHelp">
+        Your KMITL email cannot be changed here — a verified change flow will be required first.
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Account created</label>
+      <input class="form-control" value="{{ current_user.created_at.strftime('%d %b %Y, %H:%M') }}" readonly>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save changes</button>
+      <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% macro rental_summary(r, t, viewer='borrower', unread=0, compact=false) %}
+{# Full price summary card for a rental request. viewer: 'borrower' | 'lender' #}
+{% set is_lender = viewer == 'lender' %}
+<article class="rental-card card">
+  <header class="rental-card-head">
+    <div class="rental-card-title">
+      <a href="{{ url_for('rentals.detail', request_id=r.id) }}">
+        <strong>{{ r.item.name }}</strong>
+      </a>
+      <span class="badge {{ 'badge-green' if r.status in ('active','approved') else 'badge-orange' if r.status == 'pending' else 'badge-red' if r.status in ('rejected','cancelled') else 'badge-gray' }}">
+        {{ RENTAL_STATUS_LABELS[r.status] }}
+      </span>
+      {% if unread %}
+        <span class="badge badge-count-inline">{{ unread }} new message{{ 's' if unread != 1 }}</span>
+      {% endif %}
+    </div>
+    <div class="rental-card-who muted">
+      {% if is_lender %}
+        From: {{ r.borrower.name }}
+      {% else %}
+        Lender: {{ r.item.owner.name }}
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="rental-card-meta">
+    <span><b>Dates</b> {{ r.start_date.strftime('%d %b %Y') }} – {{ r.end_date.strftime('%d %b %Y') }}</span>
+    <span><b>Days</b> {{ r.number_of_days }}</span>
+    <span><b>Rate</b> {{ thb(r.item.price_per_day) }}/day</span>
+    <span><b>Location</b> {{ r.item.location }}</span>
+  </div>
+
+  {% if t %}
+    <table class="cost-table">
+      {% if not is_lender %}
+        <tr>
+          <td>{{ thb(r.item.price_per_day) }} × {{ r.number_of_days }} day{{ 's' if r.number_of_days != 1 }}</td>
+          <td>{{ thb(t.base_amount) }}</td>
+        </tr>
+        {% if t.discount_amount > 0 %}
+          <tr class="is-discount">
+            <td>Discount ({{ pct(t.discount_rate) }})</td>
+            <td>-{{ thb(t.discount_amount) }}</td>
+          </tr>
+        {% endif %}
+        <tr class="is-subtotal">
+          <td>Rental subtotal</td>
+          <td>{{ thb(t.rental_subtotal) }}</td>
+        </tr>
+        <tr>
+          <td>Borrower service fee ({{ pct(t.borrower_service_fee_rate) }})</td>
+          <td>{{ thb(t.borrower_service_fee) }}</td>
+        </tr>
+        <tr>
+          <td>Deposit</td>
+          <td>{{ thb(t.deposit) }}</td>
+        </tr>
+        <tr class="is-total">
+          <td>Total paid</td>
+          <td>{{ thb(t.borrower_total) }}</td>
+        </tr>
+      {% else %}
+        <tr class="is-subtotal">
+          <td>Rental subtotal</td>
+          <td>{{ thb(t.rental_subtotal) }}</td>
+        </tr>
+        <tr class="is-discount">
+          <td>Platform fee ({{ pct(t.lender_platform_fee_rate) }})</td>
+          <td>-{{ thb(t.lender_platform_fee) }}</td>
+        </tr>
+        <tr class="is-total">
+          <td>Your earnings</td>
+          <td>{{ thb(t.lender_payout) }}</td>
+        </tr>
+        <tr>
+          <td>Deposit held</td>
+          <td>{{ thb(t.deposit) }}</td>
+        </tr>
+      {% endif %}
+    </table>
+  {% endif %}
+
+  <footer class="rental-card-actions">
+    <a class="btn btn-sm btn-outline" href="{{ url_for('rentals.detail', request_id=r.id) }}">View Request</a>
+    {% if r.can_chat %}
+      <a class="btn btn-sm btn-primary" href="{{ url_for('chat.index', request_id=r.id) }}">
+        Chat with {{ 'Borrower' if is_lender else 'Lender' }}
+      </a>
+    {% endif %}
+  </footer>
+</article>
+{% endmacro %}

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% from "components/_ad_banner.html" import ad_banner %}
+{% from "components/_item_card.html" import item_card %}
+
+{% block title %}{{ item.name }}{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+
+  <nav class="breadcrumb">
+    <a href="{{ url_for('marketplace.items') }}">Marketplace</a>
+    <span>/</span>
+    <a href="{{ url_for('marketplace.items', category=item.category) }}">{{ item.category }}</a>
+    <span>/</span>
+    <span>{{ item.name }}</span>
+  </nav>
+
+  <div class="detail-layout">
+    <section class="detail-main">
+      <div class="card gallery-card">
+        <div class="gallery-main">
+          {% if item.image_url %}
+            <img id="mainImage" src="{{ item.image_url }}" alt="{{ item.name }}">
+          {% else %}
+            <div class="item-placeholder large">{{ item.name[:1] }}</div>
+          {% endif %}
+          {% if promotion_weight %}
+            <span class="badge badge-sponsored">Sponsored</span>
+          {% endif %}
+        </div>
+        {% if item.images | length > 1 %}
+          <div class="gallery-thumbs">
+            {% for image in item.images %}
+              <button type="button" class="thumb {{ 'active' if loop.first }}"
+                      data-src="/uploads/{{ image.image_path }}">
+                <img src="/uploads/{{ image.image_path }}" alt="Photo {{ loop.index }}">
+              </button>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card detail-section">
+        <div class="detail-title-row">
+          <div>
+            <div class="item-category">{{ item.category }}</div>
+            <h1>{{ item.name }}</h1>
+          </div>
+          <span class="badge {{ 'badge-green' if item.is_available else 'badge-gray' }}">
+            {{ 'Available' if item.is_available else 'Unavailable' }}
+          </span>
+        </div>
+
+        <div class="detail-facts">
+          <div class="fact"><span class="fact-label">Price</span>
+            <strong class="fact-value orange">{{ thb(item.price_per_day) }}/day</strong></div>
+          <div class="fact"><span class="fact-label">Deposit</span>
+            <strong class="fact-value">{{ thb(item.deposit) }}</strong></div>
+          <div class="fact"><span class="fact-label">Location</span>
+            <strong class="fact-value">{{ item.location }}</strong></div>
+          <div class="fact"><span class="fact-label">Lender</span>
+            <strong class="fact-value">{{ item.owner.name }}</strong></div>
+        </div>
+
+        <h3>Description</h3>
+        <p class="prose">{{ item.description or 'No description provided.' }}</p>
+
+        <h3>Rental rules</h3>
+        <ul class="rule-list">
+          <li>Pick up and return at {{ item.location }}.</li>
+          <li>Deposit of {{ thb(item.deposit) }} is refunded when the item is returned in the same condition.</li>
+          <li>Longer rentals receive an automatic discount (up to 15% for 14+ days).</li>
+          <li>Payment and handover are arranged directly with the lender in the rental chat.</li>
+        </ul>
+
+        <h3>Upcoming reservations</h3>
+        {% if upcoming %}
+          <ul class="rule-list">
+            {% for r in upcoming %}
+              <li>{{ r.start_date.strftime('%d %b %Y') }} – {{ r.end_date.strftime('%d %b %Y') }}
+                  ({{ r.number_of_days }} day{{ 's' if r.number_of_days != 1 }})</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">No reservations yet — all dates are open.</p>
+        {% endif %}
+
+        {% if active_ad %}
+          <div class="promo-note">
+            <strong>Promoted listing:</strong> {{ active_ad.promotion_level }} promotion active
+            until {{ active_ad.end_date.strftime('%d %b %Y') }}.
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <aside class="detail-side">
+      <div class="card booking-card">
+        <h3>Rent this item</h3>
+        <form method="post" action="{{ url_for('rentals.create_request', item_id=item.id) }}" id="bookingForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="start_date">Start date</label>
+              <input class="form-control" type="date" id="start_date" name="start_date"
+                     min="{{ today.isoformat() }}" value="{{ today.isoformat() }}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="end_date">End date</label>
+              <input class="form-control" type="date" id="end_date" name="end_date"
+                     min="{{ today.isoformat() }}" required>
+            </div>
+          </div>
+
+          <div class="breakdown" id="quoteBox" data-item="{{ item.id }}">
+            <div class="breakdown-head"><span>Price estimate</span></div>
+            <div class="breakdown-row">
+              <span id="quoteLine">Select dates to calculate</span>
+              <span id="quoteBase">—</span>
+            </div>
+            <div class="breakdown-row is-discount" id="quoteDiscountRow" hidden>
+              <span id="quoteDiscountLabel">Long-rental discount</span>
+              <span id="quoteDiscount">฿0.00</span>
+            </div>
+            <div class="breakdown-row is-subtotal">
+              <span>Rental subtotal</span>
+              <span id="quoteSubtotal">—</span>
+            </div>
+            <div class="breakdown-row">
+              <span>Borrower service fee (5%)</span>
+              <span id="quoteFee">—</span>
+            </div>
+            <div class="breakdown-row is-total">
+              <span>Total</span>
+              <span id="quoteTotal">—</span>
+            </div>
+            {% if item.deposit > 0 %}
+            <div class="breakdown-row">
+              <span>Refundable deposit</span>
+              <span>{{ thb(item.deposit) }}</span>
+            </div>
+            <div class="breakdown-row is-total">
+              <span>Amount required</span>
+              <span id="quoteRequired">—</span>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="form-error" id="quoteError" hidden></div>
+
+          {% if current_user.id == item.owner.id %}
+            <p class="muted">This is your own listing.</p>
+            <a class="btn btn-outline btn-block" href="{{ url_for('lender.item_edit', item_id=item.id) }}">Edit listing</a>
+          {% elif not item.is_available %}
+            <button class="btn btn-primary btn-block" type="submit" disabled>Currently unavailable</button>
+          {% else %}
+            <button class="btn btn-primary btn-block btn-lg" type="submit">Request to borrow</button>
+          {% endif %}
+          <p class="form-hint center">The lender reviews and approves your request.</p>
+        </form>
+      </div>
+    </aside>
+  </div>
+
+  {{ ad_banner(title='Banner Ad Placeholder', subtitle='Related items below') }}
+
+  <section class="related-section">
+    <h2>Related items</h2>
+    {% if related %}
+      <div class="item-grid">
+        {% for ritem in related %}
+          {{ item_card(ritem, related_weights.get(ritem.id, 0)) }}
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No other items in this category yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/item-detail.js') }}"></script>
+{% endblock %}

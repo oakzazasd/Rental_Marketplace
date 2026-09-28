@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Chat · {{ item.name }}{% endblock %}
+{% block content %}
+<div class="container page-main-inner chat-wrap"
+     id="chatRoot"
+     data-room="{{ room.rental_request_id }}"
+     data-user-id="{{ current_user.id }}"
+     data-since="{{ messages[-1].id if messages else 0 }}"
+     data-max="{{ max_length }}">
+
+  <div class="chat-shell card">
+    <header class="chat-head">
+      <a class="chat-back" href="{{ url_for('rentals.detail', request_id=room.rental_request_id) }}">‹ Back</a>
+      <div class="chat-title">
+        <strong>{{ item.name }}</strong>
+        <span class="muted">Chat with {{ other.name if other else 'the other party' }}</span>
+      </div>
+      <span class="badge badge-green">{{ RENTAL_STATUS_LABELS[rental_request.status] }}</span>
+    </header>
+
+    <div class="chat-notice">
+      Temporary rental chat — it is permanently deleted once the rental is completed,
+      rejected or cancelled.
+    </div>
+
+    <div class="chat-messages" id="chatMessages" role="log" aria-live="polite">
+      {% for message in messages %}
+        <div class="chat-msg {{ 'mine' if message.sender_id == current_user.id else 'theirs' }}">
+          <div class="chat-meta">
+            <span class="chat-sender">{{ 'You' if message.sender_id == current_user.id else message.sender.name }}</span>
+            <span class="chat-time">{{ message.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+          </div>
+          <div class="chat-bubble">{{ message.message }}</div>
+        </div>
+      {% else %}
+        <div class="chat-empty muted">No messages yet — say hello to start arranging the rental.</div>
+      {% endfor %}
+    </div>
+
+    <footer class="chat-compose">
+      <form id="chatForm" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input class="form-control" type="text" id="chatInput" name="message"
+               maxlength="{{ max_length }}" placeholder="Type a message…" required>
+        <button class="btn btn-primary" type="submit" id="chatSend">Send</button>
+      </form>
+      <div class="form-hint" id="chatHint">
+        Max {{ max_length }} characters. Plain text only.
+      </div>
+      <div class="form-error" id="chatError" hidden></div>
+    </footer>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

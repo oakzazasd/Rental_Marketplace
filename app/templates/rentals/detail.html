@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% from "components/_price_breakdown.html" import rental_costs %}
+{% from "components/_ad_banner.html" import ad_banner %}
+
+{% block title %}Rental #{{ rental_request.id }}{% endblock %}
+{% block content %}
+<div class="container page-main-inner narrow">
+
+  <nav class="breadcrumb">
+    <a href="{{ url_for('marketplace.items') }}">Marketplace</a>
+    <span>/</span>
+    <span>Rental #{{ rental_request.id }}</span>
+  </nav>
+
+  <div class="page-head">
+    <div>
+      <h1>{{ item.name }}</h1>
+      <p class="muted">
+        {% if is_lender %}Borrower: {{ borrower.name }}{% else %}Lender: {{ lender.name }}{% endif %}
+        · rental #{{ rental_request.id }}
+      </p>
+    </div>
+    <span class="badge badge-lg {{ 'badge-green' if rental_request.status in ('active','approved') else 'badge-orange' if rental_request.status == 'pending' else 'badge-red' if rental_request.status in ('rejected','cancelled') else 'badge-gray' }}">
+      {{ RENTAL_STATUS_LABELS[rental_request.status] }}
+    </span>
+  </div>
+
+  <div class="two-col">
+    <section class="card">
+      <div class="card-head"><h2>Rental details</h2></div>
+      <dl class="detail-list">
+        <div><dt>Item</dt>
+          <dd><a href="{{ url_for('marketplace.item_detail', item_id=item.id) }}">{{ item.name }}</a></dd></div>
+        <div><dt>Category</dt><dd>{{ item.category }}</dd></div>
+        <div><dt>Dates</dt>
+          <dd>{{ rental_request.start_date.strftime('%d %b %Y') }} – {{ rental_request.end_date.strftime('%d %b %Y') }}</dd></div>
+        <div><dt>Number of days</dt><dd>{{ rental_request.number_of_days }}</dd></div>
+        <div><dt>Daily price</dt><dd>{{ thb(item.price_per_day) }}/day</dd></div>
+        <div><dt>Location</dt><dd>{{ item.location }}</dd></div>
+        <div><dt>Requested on</dt><dd>{{ rental_request.created_at.strftime('%d %b %Y, %H:%M') }}</dd></div>
+        {% if transaction %}
+          <div><dt>Transaction status</dt>
+            <dd><span class="badge badge-gray">{{ TRANSACTION_STATUS_LABELS[transaction.status] }}</span></dd></div>
+          <div><dt>Currency</dt><dd>{{ transaction.currency }} (฿)</dd></div>
+        {% endif %}
+      </dl>
+
+      <footer class="rental-card-actions">
+        {% if can_decide %}
+          <form method="post" action="{{ url_for('rentals.approve', request_id=rental_request.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-primary" type="submit">Approve</button>
+          </form>
+          <form method="post" action="{{ url_for('rentals.reject', request_id=rental_request.id) }}"
+                data-confirm="Reject this request? The chat will be permanently deleted.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline" type="submit">Reject</button>
+          </form>
+        {% endif %}
+
+        {% if can_cancel %}
+          <form method="post" action="{{ url_for('rentals.cancel', request_id=rental_request.id) }}"
+                data-confirm="Cancel this request? The chat will be permanently deleted.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline" type="submit">Cancel request</button>
+          </form>
+        {% endif %}
+
+        {% if chat_available %}
+          <a class="btn btn-primary" href="{{ url_for('chat.index', request_id=rental_request.id) }}">
+            Chat with {{ 'Borrower' if is_lender else 'Lender' }}
+          </a>
+        {% endif %}
+
+        {% if can_complete %}
+          <form method="post" action="{{ url_for('rentals.complete', request_id=rental_request.id) }}"
+                data-confirm="Mark this rental as completed? The chat will be permanently deleted.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-primary" type="submit">Mark as completed</button>
+          </form>
+        {% endif %}
+      </footer>
+
+      {% if rental_request.status == 'completed' %}
+        <div class="notice notice-success">
+          This rental is complete. The transaction was finalised and the temporary chat
+          (including every message) was permanently deleted from the database.
+        </div>
+      {% elif rental_request.status in ('rejected','cancelled') %}
+        <div class="notice notice-muted">
+          This request was {{ 'rejected' if rental_request.status == 'rejected' else 'cancelled' }}.
+          The temporary chat was closed and its messages permanently deleted.
+        </div>
+      {% endif %}
+    </section>
+
+    {% if transaction %}
+      <aside class="card">
+        {{ rental_costs(rental_request, transaction, is_lender) }}
+        <p class="form-hint">
+          {% if is_lender %}
+            The platform deducts a {{ pct(transaction.lender_platform_fee_rate) }} fee from the
+            rental subtotal. Deposits are passed on in full and refunded by you on return.
+          {% else %}
+            Your {{ pct(transaction.borrower_service_fee_rate) }} service fee is calculated on the
+            discounted subtotal. The deposit is refunded when you return the item.
+          {% endif %}
+        </p>
+      </aside>
+    {% endif %}
+  </div>
+
+  {{ ad_banner(title='Banner Ad Placeholder', subtitle='Rental page banner') }}
+</div>
+{% endblock %}

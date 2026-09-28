@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Something went wrong{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="card empty-state error-state">
+    <span class="error-code">500</span>
+    <h1>Something went wrong</h1>
+    <p class="muted">An unexpected error occurred. Please try again later.</p>
+    <div class="btn-group">
+      <a class="btn btn-primary" href="{{ url_for('marketplace.index') }}">Go to marketplace</a>
+      <a class="btn btn-outline" href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('auth.login') }}">Go to dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

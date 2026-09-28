@@ -1,0 +1,67 @@
+{% macro rental_costs(r, t, is_lender=false) %}
+{# Price breakdown card. r = RentalRequest, t = Transaction #}
+<div class="breakdown">
+  <div class="breakdown-head">
+    <span>Rental Details</span>
+    <span class="muted">{{ r.item.name }}</span>
+  </div>
+
+  {% if not is_lender %}
+    <div class="breakdown-row">
+      <span>{{ thb(r.item.price_per_day) }}/day × {{ r.number_of_days }} day{{ 's' if r.number_of_days != 1 }}</span>
+      <span>{{ thb(t.base_amount) }}</span>
+    </div>
+    {% if t.discount_amount > 0 %}
+      <div class="breakdown-row is-discount">
+        <span>Long-rental discount ({{ pct(t.discount_rate) }})</span>
+        <span>-{{ thb(t.discount_amount) }}</span>
+      </div>
+    {% endif %}
+    <div class="breakdown-row is-subtotal">
+      <span>Rental subtotal</span>
+      <span>{{ thb(t.rental_subtotal) }}</span>
+    </div>
+    <div class="breakdown-row">
+      <span>Borrower service fee ({{ pct(t.borrower_service_fee_rate) }})</span>
+      <span>{{ thb(t.borrower_service_fee) }}</span>
+    </div>
+    <div class="breakdown-row is-total">
+      <span>Total</span>
+      <span>{{ thb(t.borrower_total) }}</span>
+    </div>
+    {% if t.deposit > 0 %}
+      <div class="breakdown-row">
+        <span>Refundable deposit</span>
+        <span>{{ thb(t.deposit) }}</span>
+      </div>
+      <div class="breakdown-row is-total">
+        <span>Amount required</span>
+        <span>{{ thb(t.amount_required) }}</span>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="breakdown-row">
+      <span>Rental subtotal</span>
+      <span>{{ thb(t.rental_subtotal) }}</span>
+    </div>
+    <div class="breakdown-row is-discount">
+      <span>Platform fee ({{ pct(t.lender_platform_fee_rate) }})</span>
+      <span>-{{ thb(t.lender_platform_fee) }}</span>
+    </div>
+    <div class="breakdown-row is-total">
+      <span>Your earnings</span>
+      <span>{{ thb(t.lender_payout) }}</span>
+    </div>
+    <div class="breakdown-row">
+      <span>Refundable deposit held</span>
+      <span>{{ thb(t.deposit) }}</span>
+    </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro status_badge(status) %}
+<span class="badge {{ 'badge-green' if status in ('active','approved') else 'badge-orange' if status == 'pending' else 'badge-red' if status in ('rejected','cancelled') else 'badge-gray' }}">
+  {{ RENTAL_STATUS_LABELS[status] if status in RENTAL_STATUS_LABELS else status }}
+</span>
+{% endmacro %}

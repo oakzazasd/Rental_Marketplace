@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% from "components/_ad_banner.html" import ad_banner %}
+{% from "components/_price_breakdown.html" import status_badge %}
+
+{% block title %}Lender Dashboard{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>Lending overview</h1>
+      <p class="muted">Your listings, incoming requests and earnings.</p>
+    </div>
+    <div class="btn-group">
+      <a class="btn btn-outline" href="{{ url_for('advertising.promote_select') }}">Promote an item</a>
+      <a class="btn btn-primary" href="{{ url_for('lender.item_create') }}">+ New listing</a>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <a class="stat-card" href="{{ url_for('lender.items') }}">
+      <span class="stat-label">Listed items</span>
+      <span class="stat-value">{{ my_items | length }}</span>
+      <span class="stat-sub">{{ available_items | length }} available · {{ unavailable_items | length }} unavailable</span>
+    </a>
+    <a class="stat-card" href="{{ url_for('lender.requests_list') }}">
+      <span class="stat-label">Pending requests</span>
+      <span class="stat-value">{{ pending | length }}</span>
+      <span class="stat-sub">{{ approved | length }} approved · {{ active | length }} active</span>
+    </a>
+    <a class="stat-card" href="{{ url_for('lender.rentals') }}">
+      <span class="stat-label">Completed rentals</span>
+      <span class="stat-value">{{ completed | length }}</span>
+    </a>
+    <a class="stat-card" href="{{ url_for('advertising.index') }}">
+      <span class="stat-label">Active advertisements</span>
+      <span class="stat-value">{{ active_ads }}</span>
+    </a>
+  </div>
+
+  <section class="card earnings-card">
+    <div class="card-head"><h2>Earnings</h2><a href="{{ url_for('lender.earnings') }}">Full breakdown</a></div>
+    <div class="earnings-rows">
+      <div class="earnings-row"><span>Gross rental revenue</span><strong>{{ thb(gross_revenue) }}</strong></div>
+      <div class="earnings-row is-fee"><span>Platform fees</span><strong>-{{ thb(platform_fees) }}</strong></div>
+      <div class="earnings-row is-total"><span>Net earnings</span><strong>{{ thb(net_earnings) }}</strong></div>
+    </div>
+  </section>
+
+  {{ ad_banner() }}
+
+  <section class="section-block">
+    <div class="card-head">
+      <h2>Pending requests</h2>
+      <a href="{{ url_for('lender.requests_list') }}">Manage all</a>
+    </div>
+    {% if recent %}
+      <div class="rental-grid">
+        {% for r in recent %}
+          <article class="rental-card card">
+            <header class="rental-card-head">
+              <div class="rental-card-title">
+                <a href="{{ url_for('rentals.detail', request_id=r.id) }}"><strong>{{ r.item.name }}</strong></a>
+                {{ status_badge(r.status) }}
+                {% if unread_map.get(r.id) %}
+                  <span class="badge badge-count-inline">{{ unread_map[r.id] }} new</span>
+                {% endif %}
+              </div>
+              <div class="rental-card-who muted">From: {{ r.borrower.name }}</div>
+            </header>
+            <div class="rental-card-meta">
+              <span><b>Dates</b> {{ r.start_date.strftime('%d %b') }} – {{ r.end_date.strftime('%d %b %Y') }}</span>
+              <span><b>Days</b> {{ r.number_of_days }}</span>
+              {% if r.transaction %}
+                <span><b>Subtotal</b> {{ thb(r.transaction.rental_subtotal) }}</span>
+                <span><b>You receive</b> {{ thb(r.transaction.lender_payout) }}</span>
+              {% endif %}
+            </div>
+            <footer class="rental-card-actions">
+              <form method="post" action="{{ url_for('rentals.approve', request_id=r.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-primary" type="submit">Approve</button>
+              </form>
+              <form method="post" action="{{ url_for('rentals.reject', request_id=r.id) }}"
+                    data-confirm="Reject this request? The chat will be deleted.">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline" type="submit">Reject</button>
+              </form>
+              {% if r.can_chat %}
+                <a class="btn btn-sm btn-ghost" href="{{ url_for('chat.index', request_id=r.id) }}">Chat</a>
+              {% endif %}
+            </footer>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card empty-state"><p class="muted">No pending requests right now.</p></div>
+    {% endif %}
+  </section>
+
+  <section class="section-block">
+    <div class="card-head">
+      <h2>My listings</h2>
+      <a href="{{ url_for('lender.items') }}">Manage items</a>
+    </div>
+    {% if my_items %}
+      <div class="rental-grid">
+        {% for item in my_items[:6] %}
+          <article class="rental-card card">
+            <header class="rental-card-head">
+              <div class="rental-card-title">
+                <a href="{{ url_for('marketplace.item_detail', item_id=item.id) }}"><strong>{{ item.name }}</strong></a>
+                <span class="badge {{ 'badge-green' if item.status == 'available' else 'badge-gray' }}">{{ ITEM_STATUS_LABELS[item.status] }}</span>
+              </div>
+            </header>
+            <div class="rental-card-meta">
+              <span><b>Price</b> {{ thb(item.price_per_day) }}/day</span>
+              <span><b>Category</b> {{ item.category }}</span>
+              <span><b>Location</b> {{ item.location }}</span>
+            </div>
+            <footer class="rental-card-actions">
+              <a class="btn btn-sm btn-outline" href="{{ url_for('lender.item_edit', item_id=item.id) }}">Edit</a>
+              <a class="btn btn-sm btn-primary" href="{{ url_for('advertising.promote_item', item_id=item.id) }}">Promote</a>
+            </footer>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card empty-state">
+        <p class="muted">You have not listed anything yet.</p>
+        <a class="btn btn-primary" href="{{ url_for('lender.item_create') }}">Create your first listing</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

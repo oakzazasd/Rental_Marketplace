@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "components/_rental_summary.html" import rental_summary %}
+
+{% block title %}My Lending Rentals{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>My Lending Rentals</h1>
+      <p class="muted">Approved, active and completed rentals of your items.</p>
+    </div>
+    <a class="btn btn-outline" href="{{ url_for('lender.earnings') }}">Earnings</a>
+  </div>
+
+  {% if rows %}
+    <div class="rental-grid">
+      {% for r, t in rows %}
+        {{ rental_summary(r, t, 'lender', unread_map.get(r.id, 0)) }}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card empty-state">
+      <p class="muted">No lending rentals yet.</p>
+      <a class="btn btn-primary" href="{{ url_for('lender.item_create') }}">Create a listing</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

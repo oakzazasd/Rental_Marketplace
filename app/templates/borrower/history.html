@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "components/_rental_summary.html" import rental_summary %}
+
+{% block title %}Rental History{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>Rental History</h1>
+      <p class="muted">Completed, cancelled and rejected rentals.</p>
+    </div>
+    <a class="btn btn-outline" href="{{ url_for('borrower.rentals') }}">Current rentals</a>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card accent">
+      <span class="stat-label">Total spent (completed)</span>
+      <span class="stat-value">{{ thb(total_spent) }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Service fees paid</span>
+      <span class="stat-value">{{ thb(total_fees) }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Records</span>
+      <span class="stat-value">{{ rows | length }}</span>
+    </div>
+  </div>
+
+  {% if rows %}
+    <div class="rental-grid">
+      {% for r, t in rows %}
+        {{ rental_summary(r, t, 'borrower') }}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card empty-state">
+      <p class="muted">No rental history yet.</p>
+      <a class="btn btn-primary" href="{{ url_for('marketplace.items') }}">Browse marketplace</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

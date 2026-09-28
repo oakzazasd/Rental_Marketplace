@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if item else 'New' }} listing{% endblock %}
+{% block content %}
+{% set values = form_data if form_data is defined else {} %}
+{% set item_name = values.get('name', item.name if item else '') %}
+{% set item_description = values.get('description', item.description if item else '') %}
+{% set item_category = values.get('category', item.category if item else 'Electronics') %}
+{% set item_location = values.get('location', item.location if item else 'KMITL') %}
+{% set item_price = values.get('price_per_day', item.price_per_day if item else '') %}
+{% set item_deposit = values.get('deposit', item.deposit if item else '0') %}
+{% set item_status = values.get('status', item.status if item else 'available') %}
+<div class="container page-main-inner narrow">
+  <div class="page-head">
+    <div>
+      <h1>{{ 'Edit listing' if item else 'Create a listing' }}</h1>
+      <p class="muted">Tell other students what you are lending.</p>
+    </div>
+    <a class="btn btn-ghost" href="{{ url_for('lender.items') }}">Back to my items</a>
+  </div>
+
+  <form class="card form-card" method="post"
+        action="{{ url_for('lender.item_edit', item_id=item.id) if item else url_for('lender.item_create') }}"
+        {% if not item %}enctype="multipart/form-data"{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label class="form-label" for="name">Item name *</label>
+      <input class="form-control" id="name" name="name" maxlength="150" required
+             value="{{ item_name }}" placeholder="e.g. Casio fx-991EX Calculator">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="description">Description</label>
+      <textarea class="form-control" id="description" name="description" rows="5"
+                placeholder="Condition, accessories included, pickup details…">{{ item_description }}</textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="category">Category *</label>
+        <select class="form-control" id="category" name="category" required>
+          {% for category in CATEGORIES %}
+            <option value="{{ category }}" {{ 'selected' if item_category == category }}>{{ category }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="location">Location *</label>
+        <input class="form-control" id="location" name="location" maxlength="150" required
+               value="{{ item_location }}" placeholder="e.g. KMITL Dorm 3">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="price_per_day">Price per day (฿) *</label>
+        <input class="form-control" id="price_per_day" name="price_per_day" type="number" min="1" step="0.01" required
+               value="{{ item_price }}" placeholder="100">
+        <div class="form-hint">Borrowers pay a 5% service fee on top of this price.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="deposit">Refundable deposit (฿)</label>
+        <input class="form-control" id="deposit" name="deposit" type="number" min="0" step="0.01"
+               value="{{ item_deposit }}" placeholder="0">
+        <div class="form-hint">Held separately — never counted in platform fees.</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="status">Availability</label>
+      <select class="form-control" id="status" name="status">
+        <option value="available" {{ 'selected' if item_status == 'available' }}>Available for rent</option>
+        <option value="unavailable" {{ 'selected' if item_status == 'unavailable' }}>Unavailable (no new requests)</option>
+      </select>
+    </div>
+
+    {% if not item %}
+      <div class="form-group">
+        <label class="form-label">Images (JPG, JPEG, PNG, WEBP · max 5 MB each)</label>
+        <input class="form-control" type="file" name="images" id="images"
+               accept=".jpg,.jpeg,.png,.webp" multiple>
+        <div class="form-hint">Optional — you can add images later. Files are validated, resized and stored safely.</div>
+      </div>
+    {% endif %}
+
+    <div class="form-actions">
+      <button class="btn btn-primary btn-lg" type="submit">{{ 'Save changes' if item else 'Create listing' }}</button>
+      <a class="btn btn-ghost" href="{{ url_for('lender.items') }}">Cancel</a>
+    </div>
+  </form>
+
+  {% if item %}
+    <form class="card form-card" method="post"
+          action="{{ url_for('lender.item_upload_image', item_id=item.id) }}"
+          enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h3>Upload another image</h3>
+      <div class="form-row image-add">
+        <div class="form-group grow">
+          <label class="form-label" for="extra_image">JPG, JPEG, PNG or WEBP · max 5 MB</label>
+          <input class="form-control" type="file" id="extra_image" name="image"
+                 accept=".jpg,.jpeg,.png,.webp" required>
+        </div>
+        <div class="form-group align-end">
+          <button class="btn btn-primary" type="submit">Upload image</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="card form-card">
+      <h3>Current images</h3>
+      {% if item.images %}
+        <div class="image-manager">
+          {% for image in item.images %}
+            <div class="image-chip">
+              <img src="/uploads/{{ image.image_path }}" alt="Item image">
+              <form method="post" action="{{ url_for('lender.image_delete', image_id=image.id) }}"
+                    data-confirm="Delete this image?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="chip-remove" type="submit" aria-label="Remove image">&times;</button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted">No images uploaded yet.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

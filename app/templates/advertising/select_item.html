@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Select item to promote{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>Promote your item</h1>
+      <p class="muted">Step 1 — choose which listing you want to advertise.</p>
+    </div>
+    <a class="btn btn-ghost" href="{{ url_for('advertising.index') }}">Back to advertising</a>
+  </div>
+
+  <div class="item-grid">
+    {% for item in items %}
+      <article class="item-card">
+        <a class="item-media" href="{{ url_for('advertising.promote_item', item_id=item.id) }}">
+          {% if item.image_url %}
+            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+          {% else %}
+            <div class="item-placeholder">{{ item.name[:1] }}</div>
+          {% endif %}
+        </a>
+        <div class="item-body">
+          <div class="item-category">{{ item.category }}</div>
+          <h3 class="item-name">{{ item.name }}</h3>
+          <div class="item-price">{{ thb(item.price_per_day) }}<span>/day</span></div>
+          <a class="btn btn-primary btn-block" href="{{ url_for('advertising.promote_item', item_id=item.id) }}">Promote</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

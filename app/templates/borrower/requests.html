@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "components/_rental_summary.html" import rental_summary %}
+
+{% block title %}My Requests{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>My Requests</h1>
+      <p class="muted">Track every borrow request you have sent.</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('marketplace.items') }}">Browse marketplace</a>
+  </div>
+
+  {% for key, title in [('pending','Pending'),('approved','Approved'),('rejected','Rejected'),('cancelled','Cancelled')] %}
+    <section class="section-block">
+      <div class="card-head"><h2>{{ title }} ({{ groups[key] | length }})</h2></div>
+      {% if groups[key] %}
+        <div class="rental-grid">
+          {% for r, t in rows[key] %}
+            {{ rental_summary(r, t, 'borrower', unread_map.get(r.id, 0)) }}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card empty-state"><p class="muted">No {{ title | lower }} requests.</p></div>
+      {% endif %}
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

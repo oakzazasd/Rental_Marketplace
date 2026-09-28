@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% from "components/_ad_banner.html" import ad_banner %}
+{% from "components/_item_card.html" import item_card %}
+
+{% block title %}Marketplace{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+
+  <div class="page-head">
+    <div>
+      <h1>Marketplace</h1>
+      <p class="muted">{{ total }} item{{ 's' if total != 1 }} available for KMITL students</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('lender.item_create') }}">+ List an item</a>
+  </div>
+
+  {{ ad_banner() }}
+
+  <form class="filters card" method="get" action="{{ url_for('marketplace.items') }}">
+    <div class="filters-grid">
+      <div class="filter-field filter-grow">
+        <label class="form-label" for="q">Search</label>
+        <input class="form-control" type="search" id="q" name="q" value="{{ filters.q }}"
+               placeholder="Search name, description or category…">
+      </div>
+
+      <div class="filter-field">
+        <label class="form-label" for="category">Category</label>
+        <select class="form-control" id="category" name="category">
+          <option value="">All categories</option>
+          {% for category in CATEGORIES %}
+            <option value="{{ category }}" {{ 'selected' if filters.category == category }}>{{ category }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label class="form-label" for="min_price">Min ฿/day</label>
+        <input class="form-control" type="number" id="min_price" name="min_price" min="0" step="1"
+               value="{{ filters.min_price if filters.min_price is not none }}">
+      </div>
+
+      <div class="filter-field">
+        <label class="form-label" for="max_price">Max ฿/day</label>
+        <input class="form-control" type="number" id="max_price" name="max_price" min="0" step="1"
+               value="{{ filters.max_price if filters.max_price is not none }}">
+      </div>
+
+      <div class="filter-field">
+        <label class="form-label" for="availability">Availability</label>
+        <select class="form-control" id="availability" name="availability">
+          <option value="all" {{ 'selected' if filters.availability == 'all' }}>Show all</option>
+          <option value="available" {{ 'selected' if filters.availability == 'available' }}>Available only</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label class="form-label" for="sort">Sort by</label>
+        <select class="form-control" id="sort" name="sort">
+          <option value="relevance" {{ 'selected' if filters.sort == 'relevance' }}>Relevance</option>
+          <option value="newest" {{ 'selected' if filters.sort == 'newest' }}>Newest</option>
+          <option value="price_asc" {{ 'selected' if filters.sort == 'price_asc' }}>Price: low to high</option>
+          <option value="price_desc" {{ 'selected' if filters.sort == 'price_desc' }}>Price: high to low</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filters-actions">
+      <button class="btn btn-primary" type="submit">Apply filters</button>
+      <a class="btn btn-ghost" href="{{ url_for('marketplace.items') }}">Reset</a>
+      {% if filters.q %}
+        <span class="muted">Results for “{{ filters.q }}”</span>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if items %}
+    <div class="item-grid">
+      {% for item in items %}
+        {{ item_card(item, promotion_weights.get(item.id, 0)) }}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card empty-state">
+      <h3>No items found</h3>
+      <p class="muted">Try a different search term or clear the filters.</p>
+      <a class="btn btn-outline" href="{{ url_for('marketplace.items') }}">Clear filters</a>
+    </div>
+  {% endif %}
+
+  {% if total_pages > 1 %}
+    <nav class="pagination" aria-label="Pagination">
+      {% if page > 1 %}
+        <a class="page-link" href="{{ build_search_url(filters, page - 1) }}">‹ Prev</a>
+      {% endif %}
+      {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+          <span class="page-link active">{{ p }}</span>
+        {% elif p <= 3 or p > total_pages - 2 or (p - page)|abs <= 1 %}
+          <a class="page-link" href="{{ build_search_url(filters, p) }}">{{ p }}</a>
+        {% elif p == 4 or p == total_pages - 2 %}
+          <span class="page-link disabled">…</span>
+        {% endif %}
+      {% endfor %}
+      {% if page < total_pages %}
+        <a class="page-link" href="{{ build_search_url(filters, page + 1) }}">Next ›</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

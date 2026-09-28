@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% from "components/_ad_banner.html" import ad_banner %}
+
+{% block title %}Advertising{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>Advertising</h1>
+      <p class="muted">Promote your listings to get more visibility in the marketplace.</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('advertising.promote_select') }}">+ Promote an item</a>
+  </div>
+
+  {{ ad_banner(title='Banner Ad Placeholder', subtitle='Advertising dashboard banner') }}
+
+  <section class="card">
+    <div class="card-head"><h2>How pricing works</h2></div>
+    <ul class="rule-list">
+      <li>Advertising costs are calculated per day from a base price plus two multipliers.</li>
+      <li><strong>Category competition:</strong> the more active listings a category has, the higher the
+        competition multiplier (1.0× → 1.25× → 1.5× → 2.0×).</li>
+      <li><strong>Promotion level:</strong> Basic 1.0× (+10 ranking), Standard 1.5× (+25 ranking),
+        Premium 2.0× (+50 ranking).</li>
+      <li>Promoted items always show a <span class="badge badge-sponsored">Sponsored</span> label and can
+        never outrank a strongly relevant search result.</li>
+      <li>This version simulates the purchase — no real payment provider is connected yet.</li>
+    </ul>
+  </section>
+
+  {% for key, title in [('active','Active promotions'),('pending','Pending'),('expired','Expired'),('cancelled','Cancelled')] %}
+    <section class="section-block">
+      <div class="card-head"><h2>{{ title }} ({{ groups[key] | length }})</h2></div>
+      {% if groups[key] %}
+        <div class="card table-card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Item</th><th>Level</th><th>Start</th><th>End</th>
+                <th>Daily price</th><th>Total price</th><th>Status</th><th class="right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ad in groups[key] %}
+                <tr>
+                  <td><a href="{{ url_for('marketplace.item_detail', item_id=ad.item_id) }}"><strong>{{ ad.item.name }}</strong></a>
+                    <div class="muted small">{{ ad.item.category }}</div></td>
+                  <td><span class="badge badge-sponsored">{{ ad.promotion_level }}</span></td>
+                  <td>{{ ad.start_date.strftime('%d %b %Y') }}</td>
+                  <td>{{ ad.end_date.strftime('%d %b %Y') }}</td>
+                  <td>{{ thb(ad.daily_price) }}/day</td>
+                  <td><strong>{{ thb(ad.total_price) }}</strong></td>
+                  <td><span class="badge {{ 'badge-green' if ad.status == 'active' else 'badge-gray' }}">{{ AD_STATUS_LABELS[ad.status] }}</span></td>
+                  <td class="right">
+                    <div class="table-actions">
+                      {% if ad.status == 'active' %}
+                        <form method="post" action="{{ url_for('advertising.cancel', ad_id=ad.id) }}"
+                              data-confirm="Cancel this promotion?">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          <button class="btn btn-sm btn-outline" type="submit">Cancel</button>
+                        </form>
+                      {% else %}
+                        <span class="muted">—</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="card empty-state"><p class="muted">No {{ title | lower }}.</p></div>
+      {% endif %}
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

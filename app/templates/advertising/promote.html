@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% from "components/_ad_banner.html" import ad_banner %}
+
+{% block title %}Promote {{ item.name }}{% endblock %}
+{% block content %}
+<div class="container page-main-inner narrow">
+  <div class="page-head">
+    <div>
+      <h1>Promote Your Item</h1>
+      <p class="muted">Step 2 — choose a level and duration, then confirm.</p>
+    </div>
+    <a class="btn btn-ghost" href="{{ url_for('advertising.index') }}">Back to advertising</a>
+  </div>
+
+  <div class="two-col">
+    <form class="card form-card" id="promoteForm" method="post"
+          action="{{ url_for('advertising.promote_item', item_id=item.id) }}"
+          data-category="{{ item.category }}" data-quote-url="{{ url_for('advertising.quote') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <dl class="detail-list">
+        <div><dt>Item</dt><dd><strong>{{ item.name }}</strong></dd></div>
+        <div><dt>Category</dt><dd>{{ item.category }}</dd></div>
+        <div><dt>Current price</dt><dd>{{ thb(item.price_per_day) }}/day</dd></div>
+      </dl>
+
+      <div class="form-group">
+        <label class="form-label" for="promotion_level">Promotion level</label>
+        <select class="form-control" id="promotion_level" name="promotion_level" required>
+          {% for level in levels %}
+            <option value="{{ level.name }}">{{ level.name }} — +{{ level.ranking_weight }} ranking ·
+              {{ level.price_multiplier }}× price</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="duration_days">Duration</label>
+        <select class="form-control" id="duration_days" name="duration_days" required>
+          {% for days in duration_choices %}
+            <option value="{{ days }}">{{ days }} day{{ 's' if days != 1 }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="breakdown" id="quoteBox" aria-live="polite">
+        <div class="breakdown-head"><span>Price breakdown</span></div>
+        <div class="breakdown-row"><span>Base price</span><span id="qBase">—</span></div>
+        <div class="breakdown-row"><span>Active listings in {{ item.category }}</span><span id="qListings">—</span></div>
+        <div class="breakdown-row"><span>Competition</span><span id="qCompetition">—</span></div>
+        <div class="breakdown-row"><span>Competition multiplier</span><span id="qCompMult">—</span></div>
+        <div class="breakdown-row"><span>Promotion multiplier</span><span id="qLevelMult">—</span></div>
+        <div class="breakdown-row is-subtotal"><span>Final price / day</span><span id="qDaily">—</span></div>
+        <div class="breakdown-row"><span>Duration</span><span id="qDuration">—</span></div>
+        <div class="breakdown-row is-total"><span>Total</span><span id="qTotal">—</span></div>
+      </div>
+
+      <div class="form-error" id="quoteError" hidden></div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary btn-lg" type="submit" id="confirmPromo">Confirm Promotion</button>
+        <a class="btn btn-ghost" href="{{ url_for('advertising.index') }}">Cancel</a>
+      </div>
+      <p class="form-hint">
+        No real payment is processed in this version — confirming creates the promotion record directly.
+      </p>
+    </form>
+
+    <aside class="card">
+      <div class="card-head"><h2>Promotion levels</h2></div>
+      <table class="table">
+        <thead><tr><th>Level</th><th>Ranking</th><th>Price</th></tr></thead>
+        <tbody>
+          {% for level in levels %}
+            <tr>
+              <td><strong>{{ level.name }}</strong></td>
+              <td>+{{ level.ranking_weight }}</td>
+              <td>{{ level.price_multiplier }}×</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="notice notice-muted">
+        Advertising price = base price × competition multiplier × promotion multiplier × duration.
+        Competition is recalculated live from the number of active listings in this category.
+      </div>
+      {{ ad_banner(title='Banner Ad Placeholder', subtitle='Promotion page') }}
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/advertising.js') }}"></script>
+{% endblock %}

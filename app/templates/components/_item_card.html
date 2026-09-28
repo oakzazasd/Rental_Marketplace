@@ -1,0 +1,29 @@
+{% macro item_card(item, weight=0) %}
+<article class="item-card">
+  <a class="item-media" href="{{ url_for('marketplace.item_detail', item_id=item.id) }}">
+    {% if item.image_url %}
+      <img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy">
+    {% else %}
+      <div class="item-placeholder">{{ item.name[:1] }}</div>
+    {% endif %}
+    {% if weight %}
+      <span class="badge badge-sponsored">Sponsored</span>
+    {% endif %}
+    <span class="badge {{ 'badge-green' if item.status == 'available' else 'badge-gray' }}">
+      {{ 'Available' if item.status == 'available' else 'Unavailable' }}
+    </span>
+  </a>
+  <div class="item-body">
+    <div class="item-category">{{ item.category }}</div>
+    <h3 class="item-name">
+      <a href="{{ url_for('marketplace.item_detail', item_id=item.id) }}">{{ item.name }}</a>
+    </h3>
+    <div class="item-price">{{ thb(item.price_per_day) }}<span>/day</span></div>
+    <div class="item-meta">
+      <span>{{ item.location }}</span>
+      <span>{{ item.owner.name }}</span>
+    </div>
+    <a class="btn btn-primary btn-block" href="{{ url_for('marketplace.item_detail', item_id=item.id) }}">View Details</a>
+  </div>
+</article>
+{% endmacro %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}My Items{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="page-head">
+    <div>
+      <h1>My Items</h1>
+      <p class="muted">Manage your listings, availability and images.</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('lender.item_create') }}">+ New listing</a>
+  </div>
+
+  {% if items %}
+    <div class="card table-card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Category</th>
+            <th>Price / day</th>
+            <th>Deposit</th>
+            <th>Status</th>
+            <th>Rentals</th>
+            <th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td>
+                <div class="table-item">
+                  {% if item.image_url %}
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                  {% else %}
+                    <div class="item-placeholder tiny">{{ item.name[:1] }}</div>
+                  {% endif %}
+                  <a href="{{ url_for('marketplace.item_detail', item_id=item.id) }}"><strong>{{ item.name }}</strong></a>
+                </div>
+              </td>
+              <td>{{ item.category }}</td>
+              <td>{{ thb(item.price_per_day) }}</td>
+              <td>{{ thb(item.deposit) }}</td>
+              <td>
+                <span class="badge {{ 'badge-green' if item.status == 'available' else 'badge-gray' }}">
+                  {{ ITEM_STATUS_LABELS[item.status] }}
+                </span>
+              </td>
+              <td>{{ rental_counts.get(item.id, 0) }}</td>
+              <td class="right">
+                <div class="table-actions">
+                  <a class="btn btn-sm btn-outline" href="{{ url_for('lender.item_edit', item_id=item.id) }}">Edit</a>
+                  <form method="post" action="{{ url_for('lender.item_toggle', item_id=item.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-ghost" type="submit">
+                      {{ 'Mark unavailable' if item.status == 'available' else 'Mark available' }}
+                    </button>
+                  </form>
+                  <a class="btn btn-sm btn-primary" href="{{ url_for('advertising.promote_item', item_id=item.id) }}">Promote</a>
+                  <form method="post" action="{{ url_for('lender.item_delete', item_id=item.id) }}"
+                        data-confirm="Remove '{{ item.name }}' from the marketplace?">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="card empty-state">
+      <h3>No listings yet</h3>
+      <p class="muted">List your calculator, camera, laptop or anything fellow students need.</p>
+      <a class="btn btn-primary" href="{{ url_for('lender.item_create') }}">Create your first listing</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

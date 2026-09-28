@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Page not found{% endblock %}
+{% block content %}
+<div class="container page-main-inner">
+  <div class="card empty-state error-state">
+    <span class="error-code">404</span>
+    <h1>Page not found</h1>
+    <p class="muted">The page you are looking for does not exist or has been removed.</p>
+    <div class="btn-group">
+      <a class="btn btn-primary" href="{{ url_for('marketplace.index') }}">Go to marketplace</a>
+      <a class="btn btn-outline" href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('auth.login') }}">Go to dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
